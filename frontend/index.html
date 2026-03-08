@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TweetCraft — On-Brand Tweet Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      background: #f0f2f5;
+      color: #1a1d23;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    input, textarea, select, button { font-family: inherit; outline: none; }
+    button { cursor: pointer; border: none; background: none; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #dde0e6; border-radius: 4px; }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      background: #fff;
+      border-bottom: 1px solid #e2e4e9;
+      padding: 0 24px;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .nav-left  { display: flex; align-items: center; gap: 14px; }
+    .nav-logo  { display: flex; align-items: center; gap: 8px; }
+    .logo-box  { width: 28px; height: 28px; background: #e8620a; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 800; }
+    .logo-name { font-size: 15px; font-weight: 700; color: #1a1d23; }
+    .nav-div   { width: 1px; height: 20px; background: #e2e4e9; }
+    .nav-pg    { display: flex; flex-direction: column; }
+    .nav-pg-t  { font-size: 10px; font-weight: 700; color: #e8620a; letter-spacing: 0.08em; }
+    .nav-pg-b  { font-size: 12px; color: #6b7280; }
+    .nav-right { display: flex; align-items: center; gap: 18px; }
+    .nstat     { display: flex; align-items: center; gap: 8px; }
+    .nstat-ic  { width: 30px; height: 30px; background: #fff3ed; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .nstat-num { font-size: 15px; font-weight: 700; line-height: 1; }
+    .nstat-lbl { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+    .nav-av    { display: flex; align-items: center; gap: 8px; padding-left: 14px; border-left: 1px solid #e2e4e9; }
+    .av-pic    { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#e8620a,#f59e0b); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .av-name   { font-size: 12px; font-weight: 600; line-height: 1; }
+    .av-role   { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+    /* ── LAYOUT ── */
+    .shell { display: grid; grid-template-columns: 300px 1fr; height: calc(100vh - 56px); }
+
+    /* ── SIDEBAR ── */
+    .sidebar { background: #fff; border-right: 1px solid #e2e4e9; overflow-y: auto; display: flex; flex-direction: column; }
+
+    /* Tabs */
+    .stabs  { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #e2e4e9; position: sticky; top: 0; background: #fff; z-index: 5; }
+    .stab   { padding: 12px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #9ca3af; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .stab:hover  { color: #4b5563; }
+    .stab.active { color: #e8620a; border-bottom-color: #e8620a; }
+
+    /* Sections */
+    .sec     { border-bottom: 1px solid #f0f2f5; }
+    .sec-hdr { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; cursor: pointer; background: #fafbfc; user-select: none; transition: background 0.15s; }
+    .sec-hdr:hover { background: #f3f4f6; }
+    .sec-ttl { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; color: #e8620a; letter-spacing: 0.09em; }
+    .sec-chv { font-size: 10px; color: #9ca3af; transition: transform 0.2s; display: inline-block; }
+    .sec-chv.closed { transform: rotate(180deg); }
+    .sec-bdy { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .sec-bdy.collapsed { display: none; }
+
+    /* Form elements */
+    .fg     { display: flex; flex-direction: column; gap: 5px; }
+    .fg2    { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fl     { font-size: 10px; font-weight: 700; color: #6b7280; letter-spacing: 0.05em; text-transform: uppercase; }
+    .req    { color: #e8620a; }
+    .hl     { font-weight: 400; text-transform: none; letter-spacing: 0; color: #9ca3af; }
+    .fi, .fta {
+      background: #fff; border: 1.5px solid #e5e7eb; border-radius: 7px;
+      color: #1a1d23; font-size: 13px; padding: 8px 11px; width: 100%;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .fi:focus, .fta:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .fi::placeholder, .fta::placeholder { color: #c4c9d4; }
+    .fta { resize: vertical; line-height: 1.55; }
+    .sw  { position: relative; }
+    .fs  {
+      appearance: none; width: 100%; background: #fff;
+      border: 1.5px solid #e5e7eb; border-radius: 7px;
+      color: #1a1d23; font-size: 13px; padding: 8px 26px 8px 10px; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .fs:focus { border-color: #3b82f6; }
+    .fs option { background: #fff; }
+    .sa  { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 9px; pointer-events: none; }
+
+    /* Tone chips */
+    .tchips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tchip  { background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 99px; color: #4b5563; font-size: 11px; font-weight: 500; padding: 5px 11px; transition: all 0.15s; }
+    .tchip:hover { border-color: #e8620a; color: #e8620a; background: #fff7ed; }
+    .tchip.on    { background: #e8620a; border-color: #e8620a; color: #fff; }
+
+    /* Auto-detect badge */
+    .auto-badge { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #065f46; display: flex; align-items: center; gap: 6px; margin: 12px 16px 0; }
+    .auto-badge strong { color: #047857; }
+
+    /* Voice tab */
+    .hidden { display: none !important; }
+    .voice-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .vl         { font-size: 10px; font-weight: 700; color: #9ca3af; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    .v-badge    { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 99px; color: #c2410c; font-size: 12px; font-weight: 700; padding: 4px 14px; }
+    .vb         { border-top: 1px solid #f3f4f6; padding-top: 11px; margin-top: 8px; }
+    .vv         { font-size: 13px; color: #374151; line-height: 1.6; margin-top: 4px; }
+    .trow       { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .tpill      { background: #eff6ff; color: #2563eb; border-radius: 99px; font-size: 11px; font-weight: 500; padding: 3px 10px; }
+
+    /* Error */
+    .err-msg { margin: 10px 16px 0; color: #b91c1c; font-size: 12px; padding: 9px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 7px; }
+
+    /* Generate button */
+    .btn-gen { margin: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #e8620a; color: #fff; border-radius: 9px; font-size: 14px; font-weight: 700; padding: 13px 20px; box-shadow: 0 2px 8px rgba(232,98,10,0.28); transition: all 0.15s; }
+    .btn-gen:hover:not(:disabled) { background: #c2530a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(232,98,10,0.38); }
+    .btn-gen:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Progress */
+    .prog     { margin: 0 16px; display: flex; flex-direction: column; gap: 7px; }
+    .prog-trk { height: 3px; background: #f0f2f5; border-radius: 3px; overflow: hidden; }
+    .prog-bar { height: 100%; width: 35%; background: linear-gradient(90deg,#e8620a,#f59e0b); animation: scan 1.5s ease-in-out infinite; }
+    .prog-lbl { font-size: 11px; color: #9ca3af; text-align: center; animation: blink 1.5s ease-in-out infinite; }
+
+    /* ── MAIN AREA ── */
+    .main { overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* Empty state */
+    .empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:60px 30px; text-align:center; min-height:360px; }
+    .empty-ic { font-size:48px; margin-bottom:16px; }
+    .empty-h  { font-size:20px; font-weight:700; margin-bottom:10px; }
+    .empty-p  { font-size:13px; color:#6b7280; max-width:340px; line-height:1.7; margin-bottom:28px; }
+    .steps    { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+    .step     { display:flex; align-items:center; gap:10px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:9px; padding:11px 15px; min-width:170px; }
+    .snum     { width:24px; height:24px; border-radius:50%; background:#e8620a; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .stxt     { font-size:12px; color:#4b5563; font-weight:500; text-align:left; }
+
+    /* Toolbar */
+    .toolbar  { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #e5e7eb; border-radius:9px; padding:13px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+    .tb-left  { display:flex; align-items:center; gap:12px; }
+    .tb-brand { font-size:16px; font-weight:700; }
+    .tb-cnt   { background:#dcfce7; color:#15803d; border-radius:99px; font-size:11px; font-weight:600; padding:3px 10px; }
+    .tb-right { display:flex; gap:8px; }
+    .tbtn     { background:#e8620a; color:#fff; border-radius:7px; font-size:12px; font-weight:600; padding:7px 14px; transition:all 0.15s; }
+    .tbtn:hover { background:#c2530a; }
+    .tbtn-g   { background:#fff; color:#4b5563; border:1.5px solid #e5e7eb; }
+    .tbtn-g:hover { border-color:#e8620a; color:#e8620a; background:#fff7ed; }
+
+    /* Filter bar */
+    .fbar   { display:flex; align-items:center; gap:7px; flex-wrap:wrap; background:#fff; border:1px solid #e5e7eb; border-radius:9px; padding:11px 14px; }
+    .flbl   { font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.06em; text-transform:uppercase; }
+    .fpill  { background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:99px; color:#4b5563; font-size:11px; font-weight:500; padding:4px 12px; transition:all 0.15s; }
+    .fpill:hover  { border-color:#e8620a; color:#e8620a; }
+    .fpill.active { background:#e8620a; border-color:#e8620a; color:#fff; }
+
+    /* Tweet grid */
+    .tw-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+
+    .tw-card {
+      background:#fff; border:1px solid #e5e7eb; border-radius:11px;
+      padding:18px; display:flex; flex-direction:column; gap:11px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.05);
+      transition:box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+      animation:fadeUp 0.3s ease both;
+      border-left:4px solid #e8620a;
+    }
+    .tw-card:hover { box-shadow:0 6px 18px rgba(0,0,0,0.09); transform:translateY(-2px); border-color:#d1d5db; }
+    .tw-card.hide  { display:none; }
+
+    .tw-top   { display:flex; align-items:center; justify-content:space-between; }
+    .tw-lft   { display:flex; align-items:center; gap:8px; }
+    .tw-num   { font-size:10px; font-weight:700; color:#9ca3af; background:#f9fafb; border-radius:99px; padding:2px 8px; }
+    .tw-badge { font-size:10px; font-weight:700; border-radius:99px; padding:3px 10px; }
+
+    .tw-text  { font-size:14px; color:#111827; line-height:1.75; flex:1; font-weight:400; }
+
+    .tw-bot   { display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid #f3f4f6; }
+    .tw-tags  { display:flex; gap:7px; flex-wrap:wrap; }
+    .tw-tag   { font-size:11px; color:#2563eb; font-weight:500; }
+    .tw-rt    { display:flex; align-items:center; gap:8px; }
+    .tw-ch    { font-size:10px; color:#9ca3af; }
+    .tw-ch.over { color:#dc2626; }
+    .btn-cp   { background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:6px; color:#6b7280; font-size:11px; font-weight:500; padding:4px 10px; transition:all 0.15s; }
+    .btn-cp:hover { border-color:#3b82f6; color:#2563eb; }
+    .btn-cp.ok    { background:#f0fdf4; border-color:#86efac; color:#16a34a; }
+
+    /* Badge colours per style */
+    .bs-Engaging       { color:#059669; background:#d1fae5; }
+    .bs-Promotional    { color:#b45309; background:#fef3c7; }
+    .bs-Witty          { color:#7c3aed; background:#ede9fe; }
+    .bs-Informative    { color:#1d4ed8; background:#dbeafe; }
+    .bs-Conversational { color:#0e7490; background:#cffafe; }
+    .bs-Meme-style     { color:#c2410c; background:#ffedd5; }
+    .bs-Value-driven   { color:#065f46; background:#d1fae5; }
+
+    /* Left border colour per style */
+    .lc-Engaging       { border-left-color:#10b981; }
+    .lc-Promotional    { border-left-color:#f59e0b; }
+    .lc-Witty          { border-left-color:#8b5cf6; }
+    .lc-Informative    { border-left-color:#3b82f6; }
+    .lc-Conversational { border-left-color:#06b6d4; }
+    .lc-Meme-style     { border-left-color:#f97316; }
+    .lc-Value-driven   { border-left-color:#10b981; }
+
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);} }
+    @keyframes scan   { 0%{transform:translateX(-120%);}100%{transform:translateX(300%);} }
+    @keyframes blink  { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+
+    @media(max-width:860px) {
+      .shell  { grid-template-columns:1fr; height:auto; }
+      .sidebar{ border-right:none; border-bottom:1px solid #e2e4e9; max-height:70vh; }
+      .tw-grid{ grid-template-columns:1fr; }
+      .nstat  { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="topnav">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <div class="logo-box">T</div>
+        <span class="logo-name">TweetCraft</span>
+      </div>
+      <div class="nav-div"></div>
+      <div class="nav-pg">
+        <span class="nav-pg-t">TWEET GENERATOR</span>
+        <span class="nav-pg-b">On-Brand Tweet Generator</span>
+      </div>
+    </div>
+    <div class="nav-right">
+      <div class="nstat">
+        <div class="nstat-ic">🐦</div>
+        <div><div class="nstat-num" id="statT">0</div><div class="nstat-lbl">Tweets</div></div>
+      </div>
+      <div class="nstat">
+        <div class="nstat-ic">🏷️</div>
+        <div><div class="nstat-num" id="statB">0</div><div class="nstat-lbl">Brands</div></div>
+      </div>
+      <div class="nav-av">
+        <div class="av-pic">AI</div>
+        <div><div class="av-name">FLAN-T5 Small</div><div class="av-role">model · auto tone</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="stabs">
+        <button class="stab active" id="stab-b" onclick="switchTab('b')">🏷️ BRAND</button>
+        <button class="stab" id="stab-v" onclick="switchTab('v')">🎙️ VOICE</button>
+      </div>
+
+      <!-- BRAND TAB -->
+      <div id="tab-b">
+
+        <div class="sec" id="s-id">
+          <div class="sec-hdr" onclick="toggleS('s-id')">
+            <div class="sec-ttl">🏢 BRAND IDENTITY</div>
+            <span class="sec-chv" id="cv-s-id">&#8743;</span>
+          </div>
+          <div class="sec-bdy" id="bd-s-id">
+            <div class="fg">
+              <label class="fl">Brand Name <span class="req">*</span></label>
+              <input id="brandName" class="fi" type="text" placeholder="e.g., Zomato, Nike, Nykaa…" oninput="previewTone()"/>
+            </div>
+            <div class="fg2">
+              <div class="fg">
+                <label class="fl">Industry</label>
+                <div class="sw">
+                  <select id="industry" class="fs" onchange="previewTone()">
+                    <option value="">Select…</option>
+                    <option>Food &amp; Beverage</option>
+                    <option>Fashion &amp; Lifestyle</option>
+                    <option>Tech &amp; SaaS</option>
+                    <option>Health &amp; Wellness</option>
+                    <option>Finance &amp; Fintech</option>
+                    <option>Beauty &amp; Skincare</option>
+                    <option>Retail &amp; E-commerce</option>
+                    <option>Entertainment</option>
+                    <option>Travel</option>
+                    <option>Other</option>
+                  </select>
+                  <span class="sa">▼</span>
+                </div>
+              </div>
+              <div class="fg">
+                <label class="fl">Objective</label>
+                <div class="sw">
+                  <select id="objective" class="fs">
+                    <option value="">Select…</option>
+                    <option>Brand Awareness</option>
+                    <option>Product Promotion</option>
+                    <option>Engagement / Conversation</option>
+                    <option>Educational / Value</option>
+                    <option>Trend Participation</option>
+                    <option>Community Building</option>
+                  </select>
+                  <span class="sa">▼</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auto-detected tone preview -->
+        <div class="auto-badge" id="autoToneBadge" style="display:none">
+          ✦ Auto-detected tone: <strong id="autoToneVal"></strong>
+        </div>
+
+        <div class="sec" id="s-tone">
+          <div class="sec-hdr" onclick="toggleS('s-tone')">
+            <div class="sec-ttl">🎨 BRAND TONE <span style="font-weight:400;color:#9ca3af;margin-left:4px">(auto or manual)</span></div>
+            <span class="sec-chv" id="cv-s-tone">&#8743;</span>
+          </div>
+          <div class="sec-bdy" id="bd-s-tone">
+            <p style="font-size:11px;color:#6b7280;line-height:1.6">Tone is <strong>auto-detected</strong> from your brand name &amp; industry. You can also select manually to override.</p>
+            <div class="tchips" id="toneChips">
+              <button class="tchip" data-v="Witty &amp; Playful">Witty &amp; Playful</button>
+              <button class="tchip" data-v="Premium &amp; Elegant">Premium &amp; Elegant</button>
+              <button class="tchip" data-v="Bold &amp; Edgy">Bold &amp; Edgy</button>
+              <button class="tchip" data-v="Warm &amp; Friendly">Warm &amp; Friendly</button>
+              <button class="tchip" data-v="Informative">Informative</button>
+              <button class="tchip" data-v="Humorous / Meme-style">Humorous</button>
+              <button class="tchip" data-v="Minimalist &amp; Cool">Minimalist</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec" id="s-prod">
+          <div class="sec-hdr" onclick="toggleS('s-prod')">
+            <div class="sec-ttl">📦 PRODUCT &amp; CONTEXT</div>
+            <span class="sec-chv" id="cv-s-prod">&#8743;</span>
+          </div>
+          <div class="sec-bdy" id="bd-s-prod">
+            <div class="fg">
+              <label class="fl">About Your Products / Services <span class="req">*</span></label>
+              <textarea id="products" class="fta" rows="3" placeholder="Describe your key offerings, USPs, features — the more detail the better…"></textarea>
+            </div>
+            <div class="fg">
+              <label class="fl">Extra Context <span class="hl">(optional)</span></label>
+              <input id="extra" class="fi" type="text" placeholder="Campaign name, seasonal moment, recent launch…"/>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- VOICE TAB -->
+      <div id="tab-v" class="hidden">
+        <div class="sec">
+          <div class="sec-hdr">
+            <div class="sec-ttl">🎙️ AUTO-DETECTED VOICE</div>
+          </div>
+          <div class="sec-bdy">
+            <div class="voice-row">
+              <span class="vl">Detected Tone</span>
+              <span class="v-badge" id="vTone">—</span>
+            </div>
+            <div class="vb">
+              <span class="vl">Target Audience</span>
+              <p class="vv" id="vAudience">—</p>
+            </div>
+            <div class="vb">
+              <span class="vl">Content Themes</span>
+              <div class="trow" id="vThemes"></div>
+            </div>
+            <div class="vb">
+              <span class="vl">Brand Personality</span>
+              <p class="vv" id="vPersonality">—</p>
+            </div>
+            <div class="vb">
+              <span class="vl">Voice Description</span>
+              <p class="vv" id="vVoice">—</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="err-msg" id="errMsg" hidden></p>
+
+      <button class="btn-gen" id="btnGen" onclick="handleGenerate()">
+        <span id="btnTxt">Generate 10 Tweets</span>
+        <span>&#8594;</span>
+      </button>
+
+      <div class="prog" id="prog" hidden>
+        <div class="prog-trk"><div class="prog-bar"></div></div>
+        <p class="prog-lbl">Detecting voice &amp; generating creative tweets…</p>
+      </div>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <div class="empty" id="emptyState">
+        <div class="empty-ic">🐦</div>
+        <h2 class="empty-h">Your tweets will appear here</h2>
+        <p class="empty-p">Fill in brand details on the left. Tone is <strong>auto-detected</strong> — no manual selection needed.</p>
+        <div class="steps">
+          <div class="step"><div class="snum">1</div><div class="stxt">Enter brand name &amp; industry</div></div>
+          <div class="step"><div class="snum">2</div><div class="stxt">Describe your products</div></div>
+          <div class="step"><div class="snum">3</div><div class="stxt">Get 10 creative on-brand tweets</div></div>
+        </div>
+      </div>
+
+      <div id="resArea" hidden>
+        <div class="toolbar">
+          <div class="tb-left">
+            <span class="tb-brand" id="rBrand"></span>
+            <span class="tb-cnt">10 tweets generated</span>
+          </div>
+          <div class="tb-right">
+            <button class="tbtn" onclick="exportAll()">&#8595; Export .txt</button>
+            <button class="tbtn tbtn-g" onclick="resetAll()">&#8592; New Brand</button>
+          </div>
+        </div>
+
+        <div class="fbar">
+          <span class="flbl">Filter:</span>
+          <button class="fpill active" onclick="filterBy(this,'all')">All</button>
+          <button class="fpill" onclick="filterBy(this,'Engaging')">Engaging</button>
+          <button class="fpill" onclick="filterBy(this,'Promotional')">Promotional</button>
+          <button class="fpill" onclick="filterBy(this,'Witty')">Witty</button>
+          <button class="fpill" onclick="filterBy(this,'Informative')">Informative</button>
+          <button class="fpill" onclick="filterBy(this,'Conversational')">Conversational</button>
+          <button class="fpill" onclick="filterBy(this,'Meme-style')">Meme</button>
+          <button class="fpill" onclick="filterBy(this,'Value-driven')">Value</button>
+        </div>
+
+        <div class="tw-grid" id="twGrid"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API = "http://localhost:5000";
+    let tones = [], lastData = null;
+
+    // Known brand tone preview
+    const KNOWN = {
+      "apple":"Premium & Minimal","nike":"Bold & Motivational","zomato":"Witty & Relatable",
+      "swiggy":"Fun & Urgent","nykaa":"Glamorous & Empowering","netflix":"Witty & Cultural",
+      "amazon":"Convenient & Bold","flipkart":"Exciting & Accessible","myntra":"Trendy & Aspirational",
+      "cred":"Premium & Witty","boat":"Bold & Youth-Centric","mamaearth":"Gentle & Trustworthy",
+      "starbucks":"Warm & Premium","mcdonalds":"Fun & Nostalgic","dominos":"Urgent & Fun",
+    };
+    const IND_TONE = {
+      "food":"Fun & Craveable","fashion":"Trendy & Aspirational","tech":"Smart & Innovative",
+      "health":"Caring & Motivating","finance":"Smart & Trustworthy","beauty":"Glam & Empowering",
+      "retail":"Exciting & Accessible","entertainment":"Energetic & Witty","travel":"Adventurous & Inspiring",
+    };
+
+    function previewTone() {
+      const name = document.getElementById("brandName").value.trim().toLowerCase();
+      const ind  = document.getElementById("industry").value.toLowerCase();
+      let detected = null;
+      if (KNOWN[name]) detected = KNOWN[name];
+      else {
+        for (const [k,v] of Object.entries(IND_TONE)) {
+          if (ind.includes(k)) { detected = v; break; }
+        }
+      }
+      const badge = document.getElementById("autoToneBadge");
+      if (detected) {
+        document.getElementById("autoToneVal").textContent = detected;
+        badge.style.display = "flex";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
+    function toggleS(id) {
+      const b = document.getElementById("bd-" + id);
+      const c = document.getElementById("cv-" + id);
+      b.classList.toggle("collapsed");
+      if (c) c.classList.toggle("closed");
+    }
+
+    function switchTab(t) {
+      document.getElementById("tab-b").classList.toggle("hidden", t !== "b");
+      document.getElementById("tab-v").classList.toggle("hidden", t !== "v");
+      document.getElementById("stab-b").classList.toggle("active", t === "b");
+      document.getElementById("stab-v").classList.toggle("active", t === "v");
+    }
+
+    document.querySelectorAll(".tchip").forEach(c => {
+      c.addEventListener("click", () => {
+        const v = c.dataset.v;
+        if (c.classList.contains("on")) { c.classList.remove("on"); tones = tones.filter(t=>t!==v); }
+        else { if (tones.length >= 3) return; c.classList.add("on"); tones.push(v); }
+      });
+    });
+
+    async function handleGenerate() {
+      const brandName = document.getElementById("brandName").value.trim();
+      if (!brandName) { showErr("Please enter a brand name."); document.getElementById("brandName").focus(); return; }
+      hideErr(); setLoading(true);
+      document.getElementById("resArea").hidden = true;
+      document.getElementById("emptyState").hidden = false;
+      try {
+        const res = await fetch(`${API}/api/generate`, {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            brand_name: brandName,
+            industry:   document.getElementById("industry").value,
+            objective:  document.getElementById("objective").value || "Brand Awareness",
+            tones:      tones,
+            products:   document.getElementById("products").value.trim(),
+            extra_context: document.getElementById("extra").value.trim(),
+          }),
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.error || `Error ${res.status}`); }
+        const data = await res.json();
+        lastData = { name: brandName, data };
+
+        document.getElementById("statT").textContent = parseInt(document.getElementById("statT").textContent||0) + 10;
+        document.getElementById("statB").textContent = parseInt(document.getElementById("statB").textContent||0) + 1;
+
+        renderVoice(data.brand_voice);
+        renderTweets(data.tweets);
+        document.getElementById("rBrand").textContent = brandName;
+        document.getElementById("emptyState").hidden = true;
+        document.getElementById("resArea").hidden = false;
+        switchTab("v");
+      } catch(err) {
+        showErr(`Error: ${err.message} — Is Flask running on port 5000?`);
+      } finally { setLoading(false); }
+    }
+
+    function renderVoice(v) {
+      document.getElementById("vTone").textContent        = v.tone        || "—";
+      document.getElementById("vAudience").textContent    = v.audience    || "—";
+      document.getElementById("vPersonality").textContent = v.personality || "—";
+      document.getElementById("vVoice").textContent       = v.voice       || "—";
+      document.getElementById("vThemes").innerHTML = (v.themes||[]).map(t=>`<span class="tpill">${safe(t)}</span>`).join("");
+      // Update auto badge
+      document.getElementById("autoToneVal").textContent = v.tone || "";
+      document.getElementById("autoToneBadge").style.display = "flex";
+    }
+
+    function renderTweets(tweets) {
+      const g = document.getElementById("twGrid");
+      g.innerHTML = "";
+      tweets.forEach((t,i) => {
+        const el = makeCard(t, i+1);
+        el.style.animationDelay = `${i*45}ms`;
+        el.dataset.style = t.style;
+        g.appendChild(el);
+      });
+    }
+
+    function makeCard(t, n) {
+      const chars = t.text.length;
+      const tags  = (t.hashtags||[]).map(h=>`#${h}`).join(" ");
+      const full  = `${t.text} ${tags}`.trim();
+      const sl    = t.style.replace(/[\s\/]/g,"-");
+
+      const d = document.createElement("div");
+      d.className = `tw-card lc-${sl}`;
+      d.innerHTML = `
+        <div class="tw-top">
+          <div class="tw-lft">
+            <span class="tw-num">${String(n).padStart(2,"0")}</span>
+            <span class="tw-badge bs-${sl}">${t.style}</span>
+          </div>
+          <button class="btn-cp" onclick="copyIt(this,'${esc(full)}')">Copy</button>
+        </div>
+        <p class="tw-text">${safe(t.text)}</p>
+        <div class="tw-bot">
+          <div class="tw-tags">${(t.hashtags||[]).map(h=>`<span class="tw-tag">#${safe(h)}</span>`).join("")}</div>
+          <div class="tw-rt"><span class="tw-ch ${chars>260?'over':''}">${chars}/280</span></div>
+        </div>`;
+      return d;
+    }
+
+    function filterBy(btn, style) {
+      document.querySelectorAll(".fpill").forEach(p=>p.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".tw-card").forEach(c=>{
+        c.classList.toggle("hide", style!=="all" && c.dataset.style!==style);
+      });
+    }
+
+    function copyIt(btn, text) {
+      navigator.clipboard.writeText(text).then(()=>{
+        btn.textContent="✓ Copied"; btn.classList.add("ok");
+        setTimeout(()=>{ btn.textContent="Copy"; btn.classList.remove("ok"); },1800);
+      });
+    }
+
+    function exportAll() {
+      if (!lastData) return;
+      const {name, data:d} = lastData;
+      const bv = d.brand_voice;
+      const lines = [
+        `ON-BRAND TWEETS — ${name.toUpperCase()}`, "=".repeat(50),"",
+        "BRAND VOICE ANALYSIS","-".repeat(20),
+        `Tone:        ${bv.tone}`,`Audience:    ${bv.audience}`,
+        `Themes:      ${(bv.themes||[]).join(", ")}`,`Personality: ${bv.personality}`,"",
+        "GENERATED TWEETS","-".repeat(20),"",
+        ...d.tweets.map((t,i)=>`${i+1}. [${t.style}]\n${t.text}\n${(t.hashtags||[]).map(h=>`#${h}`).join(" ")}\n`),
+      ];
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/plain"}));
+      a.download = `tweets_${name.toLowerCase().replace(/\s+/g,"_")}.txt`;
+      a.click();
+    }
+
+    function resetAll() {
+      ["brandName","products","extra"].forEach(id=>document.getElementById(id).value="");
+      document.getElementById("industry").value="";
+      document.getElementById("objective").value="";
+      tones=[]; lastData=null;
+      document.querySelectorAll(".tchip.on").forEach(c=>c.classList.remove("on"));
+      document.getElementById("resArea").hidden=true;
+      document.getElementById("emptyState").hidden=false;
+      document.getElementById("autoToneBadge").style.display="none";
+      switchTab("b");
+    }
+
+    function setLoading(on) {
+      document.getElementById("btnGen").disabled=on;
+      document.getElementById("btnTxt").textContent=on?"Generating…":"Generate 10 Tweets";
+      document.getElementById("prog").hidden=!on;
+    }
+    function showErr(m){const e=document.getElementById("errMsg");e.textContent=m;e.hidden=false;}
+    function hideErr(){document.getElementById("errMsg").hidden=true;}
+    function safe(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+    function esc(s){return String(s).replace(/'/g,"\\'");}
+
+    document.getElementById("brandName").addEventListener("keydown",e=>{if(e.key==="Enter")handleGenerate();});
+  </script>
+</body>
+</html>
